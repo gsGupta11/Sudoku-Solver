@@ -97,3 +97,8 @@ def getDigitImagesArray():
 
 
 digitImages = getDigitImagesArray()
+x=0
+for i in cellImages.values():
+    cv2.imshow(str(x),i)
+    x+=1
+cv2.waitKey(0)
