@@ -1,9 +1,12 @@
 import cv2
 import numpy as np
 
-img = cv2.imread("./testimages/test7.png", 1)
+# Main Image
+img = cv2.imread("./testimages/test2.jpeg", 1)
+
+
+# Corner of Sudoku
 def getcornercoordinates(img):
-    blackimg = np.zeros_like(img)
     grayimg = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     blurredimg = cv2.GaussianBlur(grayimg, (3, 3), 0)
     threshimg = cv2.adaptiveThreshold(blurredimg, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 12)
@@ -31,8 +34,11 @@ def getcornercoordinates(img):
     # cv2.destroyAllWindows()
     return cnt
 
-def produceImage(img):
-    corners = getcornercoordinates(img)
+
+corners = getcornercoordinates(img)
+
+
+def produceImage(img, corners):
     w, h = (512, 512)
     cv2.circle(img, tuple(corners[2][0]), 3, (0, 0, 255), -1)
     skewedvertices = np.float32([corners[0][0], corners[3][0], corners[1][0], corners[2][0]])
@@ -44,22 +50,50 @@ def produceImage(img):
     # cv2.waitKey(0)
     return newimg
 
-def getCellImages(img):
-    squareimage = produceImage(img)
-    graysquareimage = cv2.cvtColor(squareimage,cv2.COLOR_BGR2GRAY)
+
+squareimage = produceImage(img, corners)
+
+
+def getCellImages(img, squareimage):
+    graysquareimage = cv2.cvtColor(squareimage, cv2.COLOR_BGR2GRAY)
+    threshgrayimage = cv2.adaptiveThreshold(graysquareimage, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV,
+                                            9, 5)
+    kernel = np.ones((2, 2), np.uint8)
+    erodedimg = cv2.erode(threshgrayimage, kernel=kernel, iterations=1)
     images = {}
     countrowwise = 1
-    w,h = graysquareimage.shape
-    x,y=h//9,w//9
+    w, h = graysquareimage.shape
+    x, y = h // 9, w // 9
 
-    for i in range(1,10):
-        for j in range(1,10):
-            images[str(countrowwise)]=(graysquareimage[x*(i-1):x*(i),y*(j-1):y*(j)])
-            countrowwise+=1
+    for i in range(1, 10):
+        for j in range(1, 10):
+            images[str(countrowwise)] = (erodedimg[x * (i - 1):x * (i), y * (j - 1):y * (j)])
+            countrowwise += 1
     print(len(images))
-    cv2.imshow("GRAY SQUARED CROPPED IMAGE",graysquareimage)
-    cv2.imshow("FIRST",images["36"])
-    cv2.waitKey(0)
+    # cv2.imshow("GRAY SQUARED CROPPED IMAGE",erodedimg)
+    # cv2.imshow("FIRST",images["42"])
+    # cv2.waitKey(0)
     return images
 
-getCellImages(img)
+
+cellImages = getCellImages(img, squareimage)
+
+
+def getDigitImagesArray():
+    digitImages = []
+    count = 0
+    for i in cellImages:
+        if (list(((cellImages[i])[16:42, 22:48]).ravel())).count(255) > 0.025 * len(
+                ((cellImages[i])[10:49, 14:49]).ravel()):
+            digitImages.append(i)
+            count += 1
+    print("THe Count is ", count)
+    # print(digitImages)
+    # cv2.imshow("TESTING",cellImages["78"][16:42,22:48])
+    # cv2.imshow("TO CHECk",cellImages["78"])
+    # cv2.imshow("original Image",img)
+    # cv2.waitKey(0)
+    return digitImages
+
+
+digitImages = getDigitImagesArray()
